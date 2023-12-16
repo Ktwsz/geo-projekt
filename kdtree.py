@@ -54,7 +54,9 @@ class KDTree:
         return query_helper(self.tree, bounds)
 
 
-def find_points(points, bounds):
-    kdtree = KDTree(list(enumerate(points)))
+def setup(points):
+    return KDTree(list(enumerate(points)))
 
-    return kdtree.query(bounds)
+
+def find_points(tree, bounds):
+    return tree.query(bounds)

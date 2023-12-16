@@ -1,4 +1,4 @@
-from kdtree import find_points as kd_solve
+from kdtree import find_points as kd_query, setup as kd_setup
 import numpy as np
 
 
@@ -38,11 +38,13 @@ def test():
         repeat = 10
 
         points = generate_points(left_bound, right_bound, n)
+        kdtree = kd_setup(points)
+
         for rep in range(repeat):
             bounds = get_rand_bounds(left_bound, right_bound)
 
             solution = brute(points, bounds)
-            kd = kd_solve(points, bounds)
+            kd = kd_query(kdtree, bounds)
 
             if kd == solution:
                 print("OK", len(solution))
