@@ -4,11 +4,27 @@ from kdtree import KDTree
 from test import generate_points
 from quadtree import QuadTree
 
+X_LOWER_LIMIT = 0
+X_UPPER_LIMIT = 1010
+
+Y_LOWER_LIMIT = 0
+Y_UPPER_LIMIT = 1010
+
+BOUNDS_RADX = 50
+BOUDNS_RADY = 50
+BOUNDS_STEP = 5
+
+POINTS_NUMBER = 50
+
+POINTS_MIN_COORD = 50
+POINS_MAX_COORD = 950
+
+
 fig, ax = plt.subplots()
 fig.subplots_adjust(bottom=0.2)
 
-ax.set_xlim(0, 1010)
-ax.set_ylim(0, 1010)
+ax.set_xlim(X_LOWER_LIMIT, X_UPPER_LIMIT)
+ax.set_ylim(Y_LOWER_LIMIT, Y_UPPER_LIMIT)
 
 points = []
 drawn_points = []
@@ -17,6 +33,12 @@ drawn_bounds = []
 
 tree = None
 tree_drawn_segments = []
+
+bounds_radx = BOUNDS_RADX
+bounds_rady = BOUDNS_RADY
+
+mousex = 0
+mousey = 0
 
 
 def set_default():
@@ -38,8 +60,8 @@ def clear_tree():
 
 def on_clear(event):
     ax.cla()
-    ax.set_xlim(0, 1010)
-    ax.set_ylim(0, 1010)
+    ax.set_xlim(X_LOWER_LIMIT, X_UPPER_LIMIT)
+    ax.set_ylim(Y_LOWER_LIMIT, Y_UPPER_LIMIT)
     clear_tree()
     set_default()
     plt.draw()
@@ -53,7 +75,7 @@ clearbtn.on_clicked(on_clear)
 def on_generate(event):
     on_clear(event)
     global points, drawn_points
-    points = generate_points(50, 950, 100)
+    points = generate_points(POINTS_MIN_COORD, POINS_MAX_COORD, POINTS_NUMBER)
     for x, y in points:
         p = ax.plot([x], [y], marker="o", markersize=5, color="blue")[0]
         drawn_points.append(p)
@@ -67,7 +89,9 @@ genbtn.on_clicked(on_generate)
 
 
 def on_qtree(event):
-    global tree, tree_drawn_segments
+    global tree, tree_drawn_segments, points
+    if not points:
+        return
     clear_tree()
     tree = QuadTree.from_points(points)
     tree_drawn_segments = tree.draw(ax)
@@ -86,7 +110,9 @@ qtbtn.on_clicked(on_qtree)
 
 
 def on_kdtree(event):
-    global tree, tree_drawn_segments
+    global tree, tree_drawn_segments, points
+    if not points:
+        return
     clear_tree()
     tree = KDTree(points)
     plt.draw()
@@ -102,6 +128,7 @@ def clear_bounds():
     for b in drawn_bounds:
         b.remove()
     drawn_bounds = []
+    plt.draw()
 
 
 def calculate_bounds(x, y, radx, rady):
@@ -120,6 +147,7 @@ def draw_bounds():
     drawn_bounds += [draw_bound(p2, p3)]
     drawn_bounds += [draw_bound(p3, p4)]
     drawn_bounds += [draw_bound(p4, p1)]
+    plt.draw()
 
 
 def get_points_in_bounds():
@@ -136,21 +164,49 @@ def highlight_points(found_points):
         drawn_points[i] = ax.plot([x], [y], marker="o", markersize=5, color=color)[0]
 
 
+def update_bounds(mousex, mousey):
+    if tree is None:
+        return
+    clear_bounds()
+    calculate_bounds(mousex, mousey, bounds_radx, bounds_rady)
+    draw_bounds()
+
+
+def update_points():
+    if tree is None:
+        return
+    found_points = get_points_in_bounds()
+    highlight_points(found_points)
+
+
 def on_move(event):
+    global bounds_radx, bounds_rady, mousex, mousey
     if event.inaxes != ax:
         clear_bounds()
         return
     mousex, mousey = event.xdata, event.ydata
-    if tree:
-        clear_bounds()
-        calculate_bounds(mousex, mousey, 50, 50)
-        draw_bounds()
-        found_points = get_points_in_bounds()
-        highlight_points(found_points)
+    update_bounds(mousex, mousey)
+    update_points()
 
     plt.draw()
 
 
+def on_press(event):
+    global bounds_radx, bounds_rady
+
+    if event.key == "up":
+        bounds_rady += BOUNDS_STEP
+    if event.key == "down":
+        bounds_rady -= BOUNDS_STEP
+    if event.key == "right":
+        bounds_radx += BOUNDS_STEP
+    if event.key == "left":
+        bounds_radx -= BOUNDS_STEP
+
+    update_bounds(mousex, mousey)
+    update_points()
+
+
 plt.connect("motion_notify_event", on_move)
-# plt.connect('button_press_event', on_click)
+plt.connect("key_press_event", on_press)
 plt.show()
