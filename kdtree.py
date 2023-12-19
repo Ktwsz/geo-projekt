@@ -8,7 +8,7 @@ class Node:
 
 class KDTree:
     def __init__(self, points):
-        self.tree = self.build_tree(points)
+        self.tree = self.build_tree(list(enumerate(points)))
 
     def build_tree(self, points, depth=0):
         n = len(points)
@@ -22,9 +22,12 @@ class KDTree:
 
         ix, p = sorted_points[n // 2]
 
-        return Node(ix, p,
-                    self.build_tree(sorted_points[:n // 2], depth + 1),
-                    self.build_tree(sorted_points[n // 2 + 1:], depth + 1))
+        return Node(
+            ix,
+            p,
+            self.build_tree(sorted_points[: n // 2], depth + 1),
+            self.build_tree(sorted_points[n // 2 + 1 :], depth + 1),
+        )
 
     def query(self, bounds):
         def query_helper(node, bounds, depth=0):
@@ -36,10 +39,12 @@ class KDTree:
             search_left = node.p[axis] >= bounds[axis][0]
             search_right = node.p[axis] <= bounds[axis][1]
 
-            is_p_in_bounds = node.p[0] >= bounds[0][0] and \
-                             node.p[0] <= bounds[0][1] and \
-                             node.p[1] >= bounds[1][0] and \
-                             node.p[1] <= bounds[1][1]
+            is_p_in_bounds = (
+                node.p[0] >= bounds[0][0]
+                and node.p[0] <= bounds[0][1]
+                and node.p[1] >= bounds[1][0]
+                and node.p[1] <= bounds[1][1]
+            )
 
             ans = {node.ix} if is_p_in_bounds else set()
 
@@ -52,11 +57,3 @@ class KDTree:
             return ans
 
         return query_helper(self.tree, bounds)
-
-
-def setup(points):
-    return KDTree(list(enumerate(points)))
-
-
-def find_points(tree, bounds):
-    return tree.query(bounds)

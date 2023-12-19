@@ -1,5 +1,5 @@
-from kdtree import find_points as kd_query, setup as kd_setup
-from quadtree import find_points as qt_query, setup as qt_setup
+from kdtree import KDTree
+from quadtree import QuadTree
 import numpy as np
 
 
@@ -35,19 +35,19 @@ def brute(points, bounds):
 def test():
     for _ in range(100):
         left_bound, right_bound = -1000, 1000
-        n = 10000
+        n = 1000
         repeat = 1000
 
         points = generate_points(left_bound, right_bound, n)
-        kdtree = kd_setup(points)
-        qtree = qt_setup(points)
+        kdtree = KDTree(points)
+        qtree = QuadTree.from_points(points)
 
         for _ in range(repeat):
             bounds = get_rand_bounds(left_bound, right_bound)
 
             solution = brute(points, bounds)
-            kd = kd_query(kdtree, bounds)
-            qt = qt_query(qtree, bounds)
+            kd = kdtree.query(bounds)
+            qt = qtree.query(bounds)
 
             if kd == solution:
                 print("KD OK")

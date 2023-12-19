@@ -19,7 +19,7 @@ class QTPoint:
 
 
 class QuadTree:
-    def __init__(self, centerx, centery, radius) -> None:
+    def __init__(self, centerx, centery, radius):
         self.centerx = centerx
         self.centery = centery
         self.radius = radius
@@ -35,6 +35,8 @@ class QuadTree:
         self.subtrees = []
 
         self.divided = False
+
+        self.drawn_objects = []
 
     def _divide(self):
         newrad = self.radius / 2
@@ -56,6 +58,9 @@ class QuadTree:
 
         return leftside and rightside and topside and botside
 
+    def _get_subtrees(self):
+        return [self.topleft, self.topright, self.botleft, self.botright]
+
     def insert(self, point: QTPoint):
         if not self._contains(point):
             return False
@@ -67,8 +72,7 @@ class QuadTree:
         if not self.divided:
             self._divide()
 
-        subtrees = [self.topleft, self.topright, self.botleft, self.botright]
-        for subtree in subtrees:
+        for subtree in self._get_subtrees():
             if subtree.insert(point):  # type: ignore
                 return True
 
@@ -95,34 +99,75 @@ class QuadTree:
 
     def query(self, bounds):
         if not self._overlaps(bounds):
-            return []
+            return set()
 
-        result = list(filter(lambda p: p._in_bounds(bounds), self.points))
+        result = filter(lambda p: p._in_bounds(bounds), self.points)
+        result = set(map(lambda p: p.data, result))
 
         if self.divided:
-            subtrees = [self.topleft, self.topright, self.botleft, self.botright]
-            for subtree in subtrees:
-                result += subtree.query(bounds)  # type: ignore
+            for subtree in self._get_subtrees():
+                result |= subtree.query(bounds)  # type: ignore
 
         return result
 
+    def _draw_segment(self, ax, p1, p2):
+        xs = [p1[0], p2[0]]
+        ys = [p1[1], p2[1]]
+        return [ax.plot(xs, ys, color="black")[0]]
 
-def setup(points):
-    maxx = max(map(lambda p: p[0], points))
-    minx = min(map(lambda p: p[0], points))
-    maxy = max(map(lambda p: p[1], points))
-    miny = min(map(lambda p: p[1], points))
+    def _draw(self, ax):
+        x = self.centerx
+        y = self.centery
+        r = self.radius
+        c = [x, y]
+        p1 = [x, y + r]
+        p2 = [x, y - r]
+        p3 = [x + r, y]
+        p4 = [x - r, y]
 
-    centerx = (minx + maxx) / 2
-    centery = (miny + maxy) / 2
-    radius = max(maxx - centerx, maxy - centery) + 10**-12
+        ds = []
 
-    tree = QuadTree(centerx, centery, radius)
-    for i, (x, y) in enumerate(points):
-        tree.insert(QTPoint(x, y, i))
+        if self.divided:
+            ds += self._draw_segment(ax, c, p1)
+            ds += self._draw_segment(ax, c, p2)
+            ds += self._draw_segment(ax, c, p3)
+            ds += self._draw_segment(ax, c, p4)
 
-    return tree
+            for subtree in self._get_subtrees():
+                ds += subtree._draw(ax)  # type: ignore
+        return ds
 
+    def draw(self, ax):
+        x = self.centerx
+        y = self.centery
+        r = self.radius
+        p1 = [x - r, y + r]
+        p2 = [x + r, y + r]
+        p3 = [x + r, y - r]
+        p4 = [x - r, y - r]
 
-def find_points(tree, bounds):
-    return set(map(lambda qtp: qtp.data, tree.query(bounds)))
+        ds = []
+
+        ds += self._draw_segment(ax, p1, p2)
+        ds += self._draw_segment(ax, p2, p3)
+        ds += self._draw_segment(ax, p3, p4)
+        ds += self._draw_segment(ax, p4, p1)
+
+        return self._draw(ax) + ds
+
+    @staticmethod
+    def from_points(points):
+        maxx = max(map(lambda p: p[0], points))
+        minx = min(map(lambda p: p[0], points))
+        maxy = max(map(lambda p: p[1], points))
+        miny = min(map(lambda p: p[1], points))
+
+        centerx = (minx + maxx) / 2
+        centery = (miny + maxy) / 2
+        radius = max(maxx - centerx, maxy - centery) + 10**-12
+
+        tree = QuadTree(centerx, centery, radius)
+        for i, (x, y) in enumerate(points):
+            tree.insert(QTPoint(x, y, i))
+
+        return tree
