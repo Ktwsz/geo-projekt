@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 from kdtree import KDTree
 from test import generate_points
-from quadtree import QuadTree
+from quadtree import QTPoint, QuadTree
 
 X_LOWER_LIMIT = 0
 X_UPPER_LIMIT = 1010
@@ -18,6 +18,11 @@ POINTS_NUMBER = 50
 
 POINTS_MIN_COORD = 50
 POINS_MAX_COORD = 950
+
+QT_MIN_X = 10
+QT_MAX_X = 990
+QT_MIN_Y = 10
+QT_MAX_Y = 990
 
 
 fig, ax = plt.subplots()
@@ -88,14 +93,21 @@ genbtn = Button(axgenbtn, "Wygeneruj")
 genbtn.on_clicked(on_generate)
 
 
+def draw_tree():
+    global tree_drawn_segments
+    if not isinstance(tree, QuadTree):
+        return
+    tree_drawn_segments = tree.draw(ax)
+    plt.draw()
+
+
 def on_qtree(event):
     global tree, tree_drawn_segments, points
     if not points:
         return
     clear_tree()
-    tree = QuadTree.from_points(points)
-    tree_drawn_segments = tree.draw(ax)
-    plt.draw()
+    tree = QuadTree.fixed_size(points, QT_MIN_X, QT_MAX_X, QT_MIN_Y, QT_MAX_Y)
+    draw_tree()
 
 
 def draw_bound(p1, p2):
@@ -191,7 +203,21 @@ def on_move(event):
     plt.draw()
 
 
-def on_press(event):
+def on_click(event):
+    global tree
+    if event.inaxes != ax:
+        return
+    x, y = event.xdata, event.ydata
+    points.append((x, y))
+    p = ax.plot([x], [y], marker="o", markersize=5, color="blue")[0]
+    drawn_points.append(p)
+    if isinstance(tree, QuadTree):
+        tree.insert(QTPoint(x, y, len(points) - 1))
+        clear_tree()
+        draw_tree()
+
+
+def on_key_press(event):
     global bounds_radx, bounds_rady
 
     if event.key == "up":
@@ -208,5 +234,6 @@ def on_press(event):
 
 
 plt.connect("motion_notify_event", on_move)
-plt.connect("key_press_event", on_press)
+plt.connect("key_press_event", on_key_press)
+plt.connect("button_press_event", on_click)
 plt.show()

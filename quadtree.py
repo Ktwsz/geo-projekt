@@ -171,3 +171,15 @@ class QuadTree:
             tree.insert(QTPoint(x, y, i))
 
         return tree
+
+    @staticmethod
+    def fixed_size(points, minx, maxx, miny, maxy):
+        centerx = (minx + maxx) / 2
+        centery = (miny + maxy) / 2
+        radius = max(maxx - centerx, maxy - centery)
+
+        tree = QuadTree(centerx, centery, radius)
+        for i, (x, y) in enumerate(points):
+            tree.insert(QTPoint(x, y, i))
+
+        return tree
