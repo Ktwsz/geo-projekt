@@ -7,8 +7,10 @@ class Node:
 
 
 class KDTree:
-    def __init__(self, points):
+    def __init__(self, points, draw_bounds=None):
         self.tree = self.build_tree(list(enumerate(points)))
+
+        self.draw_bounds = draw_bounds
 
     def build_tree(self, points, depth=0):
         n = len(points)
@@ -57,3 +59,54 @@ class KDTree:
             return ans
 
         return query_helper(self.tree, bounds)
+
+    def insert(self, x, y, ix):
+        def insert_helper(node, new_node, depth=0):
+            if node is None:
+                return
+
+            axis = depth % 2
+
+            if node.p[axis] >= new_node.p[axis] and node.left is not None:
+                insert_helper(node.left, new_node, depth + 1)
+            elif node.left is None:
+                node.left = new_node
+
+            if node.p[axis] < new_node.p[axis] and node.right is not None:
+                insert_helper(node.right, new_node, depth + 1)
+            elif node.right is None:
+                node.right = new_node
+
+        new_node = Node(p=(x, y), ix=ix)
+        insert_helper(self.tree, new_node)
+
+    def draw(self, ax):
+        def draw_helper(node, ax, parent_point=None, child_orient=None, depth=0):
+            if node is None:
+                return []
+
+            axis = depth % 2
+            other_axis = 1 - axis
+
+            segment = [[None, None], [None, None]]
+
+            segment[axis][0] = node.p[axis]
+            segment[axis][1] = node.p[axis]
+
+            segment[other_axis][0] = (
+                    self.draw_bounds[other_axis][0] if parent_point is None or child_orient == "LEFT"
+                    else parent_point.p[other_axis]
+                    )
+
+            segment[other_axis][1] = (
+                    self.draw_bounds[other_axis][1] if parent_point is None or child_orient == "RIGHT"
+                    else parent_point.p[other_axis]
+                    )
+
+
+            draw_segments = [ax.plot(*segment, color="black")[0]]
+
+            return draw_segments + draw_helper(node.left, ax, node, "LEFT", depth + 1) + draw_helper(node.right, ax, node, "RIGHT", depth + 1)
+
+
+        return draw_helper(self.tree, ax)

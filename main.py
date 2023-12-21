@@ -95,8 +95,9 @@ genbtn.on_clicked(on_generate)
 
 def draw_tree():
     global tree_drawn_segments
-    if not isinstance(tree, QuadTree):
+    if not isinstance(tree, QuadTree) and not isinstance(tree, KDTree):
         return
+
     tree_drawn_segments = tree.draw(ax)
     plt.draw()
 
@@ -126,7 +127,7 @@ def on_kdtree(event):
     if not points:
         return
     clear_tree()
-    tree = KDTree(points)
+    tree = KDTree(points, draw_bounds=((X_LOWER_LIMIT, X_UPPER_LIMIT), (Y_LOWER_LIMIT, Y_UPPER_LIMIT)))
     plt.draw()
 
 
@@ -213,8 +214,12 @@ def on_click(event):
     drawn_points.append(p)
     if isinstance(tree, QuadTree):
         tree.insert(QTPoint(x, y, len(points) - 1))
-        clear_tree()
-        draw_tree()
+
+    if isinstance(tree, KDTree):
+        tree.insert(x, y, len(points) - 1)
+
+    clear_tree()
+    draw_tree()
 
 
 def on_key_press(event):
