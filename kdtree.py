@@ -1,3 +1,6 @@
+from copy import deepcopy
+
+
 class Node:
     def __init__(self, ix=None, p=None, left=None, right=None):
         self.ix = ix
@@ -69,19 +72,19 @@ class KDTree:
 
             if node.p[axis] >= new_node.p[axis] and node.left is not None:
                 insert_helper(node.left, new_node, depth + 1)
-            elif node.left is None:
+            elif node.p[axis] >= new_node.p[axis]:
                 node.left = new_node
 
             if node.p[axis] < new_node.p[axis] and node.right is not None:
                 insert_helper(node.right, new_node, depth + 1)
-            elif node.right is None:
+            elif node.p[axis] < new_node.p[axis]:
                 node.right = new_node
 
         new_node = Node(p=(x, y), ix=ix)
         insert_helper(self.tree, new_node)
 
     def draw(self, ax):
-        def draw_helper(node, ax, parent_point=None, child_orient=None, depth=0):
+        def draw_helper(node, ax, current_bounds, depth=0):
             if node is None:
                 return []
 
@@ -90,23 +93,23 @@ class KDTree:
 
             segment = [[None, None], [None, None]]
 
-            segment[axis][0] = node.p[axis]
-            segment[axis][1] = node.p[axis]
+            segment[axis] = (node.p[axis], node.p[axis])
 
-            segment[other_axis][0] = (
-                    self.draw_bounds[other_axis][0] if parent_point is None or child_orient == "LEFT"
-                    else parent_point.p[other_axis]
-                    )
-
-            segment[other_axis][1] = (
-                    self.draw_bounds[other_axis][1] if parent_point is None or child_orient == "RIGHT"
-                    else parent_point.p[other_axis]
-                    )
+            segment[other_axis] = current_bounds[other_axis]
 
 
             draw_segments = [ax.plot(*segment, color="black")[0]]
 
-            return draw_segments + draw_helper(node.left, ax, node, "LEFT", depth + 1) + draw_helper(node.right, ax, node, "RIGHT", depth + 1)
+            left_bounds = list(deepcopy(current_bounds))
+            left_bounds[axis] = (left_bounds[axis][0], node.p[axis])
+
+            right_bounds = list(deepcopy(current_bounds))
+            right_bounds[axis] = (node.p[axis], right_bounds[axis][1])
+
+            return (draw_segments +
+                    draw_helper(node.left, ax, tuple(left_bounds), depth + 1) +
+                    draw_helper(node.right, ax, tuple(right_bounds), depth + 1)
+                    )
 
 
-        return draw_helper(self.tree, ax)
+        return draw_helper(self.tree, ax, self.draw_bounds)
