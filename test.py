@@ -2,9 +2,12 @@ from kdtree import KDTree
 from quadtree import QuadTree
 import numpy as np
 from time import process_time
+import os.path
+from random import randrange
 
 
 TIME_DF_DIR = "./time.csv"
+ASYMPTOTIC_TIME_DF_DIR = "./as_time.csv"
 
 
 def generate_points(left_bound, right_bound, n):
@@ -24,6 +27,12 @@ def get_rand_bounds(left, right):
         y1, y2 = y2, y1
 
     return ((x1, x2), (y1, y2))
+
+
+def get_rand_bounds_small(points):
+    ix = randrange(0, len(points))
+
+    return ((points[ix][0] - 10, points[ix][0] + 10), (points[ix][1] - 10, points[ix][1] + 10))
 
 
 def brute(points, bounds):
@@ -47,19 +56,23 @@ def add_time(time_df, func, row, *func_args):
     return res
 
 
-def test(timer=False):
-    time_df = None if not timer else pd.DataFrame(columns=["time", "tree", "n"])
-    for _ in range(100):
-        left_bound, right_bound = -1000, 1000
-        n = 10000
-        repeat = 100
+def test(left_bound, right_bound, test_repeat, query_repeat, n, small=False, timer=False, time_df_name=None):
 
+    if timer:
+        if os.path.isfile(time_df_name):
+            time_df = pd.read_csv(time_df_name)
+        else:
+            time_df = pd.DataFrame(columns=["time", "tree", "func", "n"])
+    else:
+        time_df = None
+
+    for _ in range(test_repeat):
         points = generate_points(left_bound, right_bound, n)
 
         kdtree = (
             KDTree(points)
             if not timer
-            else add_time(time_df, KDTree, {"tree": "kd_tree", "n": n}, points)
+            else add_time(time_df, KDTree, {"tree": "kd_tree", "func": "setup", "n": n}, points)
         )
 
         qtree = (
@@ -68,13 +81,16 @@ def test(timer=False):
             else add_time(
                 time_df,
                 QuadTree.from_points,
-                {"tree": "qt_tree", "n": n},
+                {"tree": "qt_tree", "func": "setup", "n": n},
                 points,
             )
         )
 
-        for _ in range(repeat):
-            bounds = get_rand_bounds(left_bound, right_bound)
+        for _ in range(query_repeat):
+            bounds = (
+                    get_rand_bounds(left_bound, right_bound) if not small
+                    else get_rand_bounds_small(points)
+                    )
 
             solution = (
                 brute(points, bounds)
@@ -110,21 +126,64 @@ def test(timer=False):
                 )
             )
 
-            if kd == solution:
-                print("KD OK")
-            else:
+            if kd != solution:
                 print("KD ERR", kd, solution)
                 return
-            if qt == solution:
-                print("QT OK")
-            else:
+            if qt != solution:
                 print("QT ERR")
                 return
 
-    time_df.to_csv(TIME_DF_DIR, index=False)
+    if timer:
+        time_df.to_csv(time_df_name, index=False)
+
+
+def test_same_size():
+    left_bound, right_bound = -1000, 1000
+    n = 10000
+    test_repeat = 100
+    query_repeat = 100
+
+    test(left_bound, right_bound, test_repeat, query_repeat, n, timer=True, time_df_name=TIME_DF_DIR)
+
+
+def test_asymptotic():
+    left_bound, right_bound = -1000, 1000
+    test_repeat = 1
+    query_repeat = 100
+
+    for n in range(10000, 100001, 1000):
+        test(left_bound, right_bound, test_repeat, query_repeat, n, small=True, timer=True, time_df_name=ASYMPTOTIC_TIME_DF_DIR)
+
+
+def draw_asymptots():
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+
+    time_df = pd.read_csv(ASYMPTOTIC_TIME_DF_DIR)
+
+    for n in time_df["n"].unique():
+        query_samples = time_df[(time_df["n"] == n) & (time_df["func"] == "query")]
+
+        brute_samples = query_samples[query_samples["tree"] == "brute"]
+        kd_tree_samples = query_samples[query_samples["tree"] == "kd_tree"]
+        qt_tree_samples = query_samples[query_samples["tree"] == "qt_tree"]
+
+        brute_y = brute_samples["time"].mean()
+        kd_y = kd_tree_samples["time"].mean()
+        qt_y = qt_tree_samples["time"].mean()
+
+        ax.plot([n], [brute_y], 'r.')
+        ax.plot([n], [kd_y], 'b.')
+        ax.plot([n], [qt_y], 'g.')
+
+    fig.savefig('asymptoty.png')
 
 
 if __name__ == "__main__":
     import pandas as pd
 
-    test(timer=True)
+
+    #test_same_size(timer=True)
+    test_asymptotic()
+    draw_asymptots()
