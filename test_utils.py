@@ -23,7 +23,7 @@ def points_generate_circle(state):
     n = state["n"]
 
     rs = np.random.uniform(low=0, high=radius, size=n)
-    thetas = np.random(low=0, high=2*np.pi, size=n)
+    thetas = np.random.uniform(low=0, high=2*np.pi, size=n)
 
     return [(center[0] + r * np.cos(theta), center[1] + r * np.sin(theta))
             for r, theta in zip(rs, thetas)

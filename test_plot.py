@@ -40,5 +40,19 @@ def draw(df_dir, out_dir, title):
     fig.savefig(out_dir)
 
 
+def draw_points(points, out_dir, title):
+    fig, ax = plt.subplots()
+
+    ax.plot([x for x, y in points], [y for x, y in points], '.')
+
+    ax.axis("equal")
+    ax.set_xlim(left=-1000, right=1000)
+    ax.set_ylim(bottom=-1000, top=1000)
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_title(title)
+    fig.savefig(out_dir)
+
+
 if __name__ == "__main__":
     draw()
