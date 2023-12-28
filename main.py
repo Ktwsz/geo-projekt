@@ -1,35 +1,101 @@
+from math import log10
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Button
+from matplotlib.widgets import Button, RangeSlider, TextBox
 from kdtree import KDTree
-from test import generate_points
+import numpy as np
 from quadtree import QTPoint, QuadTree
 
-X_LOWER_LIMIT = 0
-X_UPPER_LIMIT = 1010
 
-Y_LOWER_LIMIT = 0
-Y_UPPER_LIMIT = 1010
+def generate_points(xrange, yrange, n):
+    r = np.random.uniform
+    return [(r(*xrange), r(*yrange)) for _ in range(n)]
+
+
+X_LOWER_LIMIT = -100
+X_UPPER_LIMIT = 100
+
+Y_LOWER_LIMIT = -100
+Y_UPPER_LIMIT = 100
 
 BOUNDS_RADX = 50
 BOUDNS_RADY = 50
 BOUNDS_STEP = 5
 
-POINTS_NUMBER = 50
+DEFAULT_POINTS_NUMBER = 50
 
 POINTS_MIN_COORD = 50
 POINS_MAX_COORD = 950
 
-QT_MIN_X = 10
-QT_MAX_X = 990
-QT_MIN_Y = 10
-QT_MAX_Y = 990
-
 
 fig, ax = plt.subplots()
-fig.subplots_adjust(bottom=0.2)
+fig.set_dpi(100)
+fig.set_size_inches(8, 6)
+ax.set_position([0.1, 0.25, 0.7, 0.7])
 
-ax.set_xlim(X_LOWER_LIMIT, X_UPPER_LIMIT)
-ax.set_ylim(Y_LOWER_LIMIT, Y_UPPER_LIMIT)
+xrange = (X_LOWER_LIMIT, X_UPPER_LIMIT)
+yrange = (Y_LOWER_LIMIT, Y_UPPER_LIMIT)
+
+
+def set_ax_limits():
+    xmargin = log10(xrange[1] - xrange[0])
+    ymargin = log10(yrange[1] - yrange[0])
+    ax.set_xlim(xrange[0] - xmargin, xrange[1] + xmargin)
+    ax.set_ylim(yrange[0] - ymargin, yrange[1] + ymargin)
+
+
+set_ax_limits()
+
+xsliderax = fig.add_axes([0.1, 0.15, 0.65, 0.03])
+xslider = RangeSlider(
+    ax=xsliderax,
+    label="zakres x",
+    valmin=X_LOWER_LIMIT,
+    valmax=X_UPPER_LIMIT,
+    valinit=(X_LOWER_LIMIT, X_UPPER_LIMIT),
+)
+
+ysliderax = fig.add_axes([0.1, 0.1, 0.65, 0.03])
+yslider = RangeSlider(
+    ax=ysliderax,
+    label="zakres y",
+    valmin=Y_LOWER_LIMIT,
+    valmax=Y_UPPER_LIMIT,
+    valinit=(Y_LOWER_LIMIT, Y_UPPER_LIMIT),
+)
+
+pointstxtbxax = fig.add_axes([0.1, 0.04, 0.1, 0.04])
+pointstxtbx = TextBox(ax=pointstxtbxax, label="liczba\npunktów")
+pointstxtbx.label.set_x(-0.1)
+pointstxtbx.label.set_y(0.5)
+pointstxtbx.label.set_fontsize(9)
+
+pointstxtbx.set_val(str(DEFAULT_POINTS_NUMBER))
+
+
+def get_points_number():
+    return int(pointstxtbx.text)
+
+
+def set_x_range(r):
+    global xrange
+    xrange = r
+    set_ax_limits()
+
+
+def set_y_range(r):
+    global yrange
+    yrange = r
+    set_ax_limits()
+
+
+xslider.on_changed(set_x_range)
+yslider.on_changed(set_y_range)
+
+
+def set_sliders_active(active):
+    xslider.set_active(active)
+    yslider.set_active(active)
+
 
 points = []
 drawn_points = []
@@ -65,14 +131,14 @@ def clear_tree():
 
 def on_clear(event):
     ax.cla()
-    ax.set_xlim(X_LOWER_LIMIT, X_UPPER_LIMIT)
-    ax.set_ylim(Y_LOWER_LIMIT, Y_UPPER_LIMIT)
+    set_ax_limits()
     clear_tree()
     set_default()
+    set_sliders_active(True)
     plt.draw()
 
 
-axclearbtn = fig.add_axes([0.1, 0.05, 0.1, 0.075])
+axclearbtn = fig.add_axes([0.75, 0.04, 0.1, 0.04])
 clearbtn = Button(axclearbtn, "Wyczyść")
 clearbtn.on_clicked(on_clear)
 
@@ -80,7 +146,9 @@ clearbtn.on_clicked(on_clear)
 def on_generate(event):
     on_clear(event)
     global points, drawn_points
-    points = generate_points(POINTS_MIN_COORD, POINS_MAX_COORD, POINTS_NUMBER)
+    if not pointstxtbx.text:
+        return
+    points = generate_points(xrange, yrange, get_points_number())
     for x, y in points:
         p = ax.plot([x], [y], marker="o", markersize=5, color="blue")[0]
         drawn_points.append(p)
@@ -88,7 +156,7 @@ def on_generate(event):
     plt.draw()
 
 
-axgenbtn = fig.add_axes([0.25, 0.05, 0.1, 0.075])
+axgenbtn = fig.add_axes([0.22, 0.04, 0.1, 0.04])
 genbtn = Button(axgenbtn, "Wygeneruj")
 genbtn.on_clicked(on_generate)
 
@@ -106,7 +174,7 @@ def on_qtree(event):
     if not points:
         return
     clear_tree()
-    tree = QuadTree.fixed_size(points, QT_MIN_X, QT_MAX_X, QT_MIN_Y, QT_MAX_Y)
+    tree = QuadTree.from_points(points)
     draw_tree()
 
 
@@ -116,7 +184,7 @@ def draw_bound(p1, p2):
     return ax.plot(xs, ys, color="green")[0]
 
 
-axqtbtn = fig.add_axes([0.45, 0.05, 0.1, 0.075])
+axqtbtn = fig.add_axes([0.4, 0.04, 0.1, 0.04])
 qtbtn = Button(axqtbtn, "Quadtree")
 qtbtn.on_clicked(on_qtree)
 
@@ -130,7 +198,7 @@ def on_kdtree(event):
     plt.draw()
 
 
-axkdtbtn = fig.add_axes([0.75, 0.05, 0.1, 0.075])
+axkdtbtn = fig.add_axes([0.55, 0.04, 0.1, 0.04])
 kdtbtn = Button(axkdtbtn, "KD-Tree")
 kdtbtn.on_clicked(on_kdtree)
 
@@ -228,6 +296,9 @@ def on_key_press(event):
         bounds_radx += BOUNDS_STEP
     if event.key == "left":
         bounds_radx -= BOUNDS_STEP
+
+    bounds_radx = max(0, bounds_radx)
+    bounds_rady = max(0, bounds_rady)
 
     update_bounds(mousex, mousey)
     update_points()

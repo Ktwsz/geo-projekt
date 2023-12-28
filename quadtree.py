@@ -48,6 +48,12 @@ class QuadTree:
         self.botleft = QuadTree(x - newrad, y - newrad, newrad)
         self.botright = QuadTree(x + newrad, y - newrad, newrad)
 
+        for point in self.points:
+            for subtree in self._get_subtrees():
+                if subtree.insert(point):  # type: ignore
+                    break
+        self.points = []
+
         self.divided = True
 
     def _contains(self, point: QTPoint):
@@ -65,7 +71,7 @@ class QuadTree:
         if not self._contains(point):
             return False
 
-        if len(self.points) < self.capacity:
+        if not self.divided and len(self.points) < self.capacity:
             self.points.append(point)
             return True
 
@@ -101,12 +107,13 @@ class QuadTree:
         if not self._overlaps(bounds):
             return set()
 
-        result = filter(lambda p: p._in_bounds(bounds), self.points)
-        result = set(map(lambda p: p.data, result))
-
         if self.divided:
+            result = set()
             for subtree in self._get_subtrees():
                 result |= subtree.query(bounds)  # type: ignore
+        else:
+            result = filter(lambda p: p._in_bounds(bounds), self.points)
+            result = set(map(lambda p: p.data, result))
 
         return result
 
@@ -148,10 +155,10 @@ class QuadTree:
 
         ds = []
 
-        ds += self._draw_segment(ax, p1, p2)
-        ds += self._draw_segment(ax, p2, p3)
-        ds += self._draw_segment(ax, p3, p4)
-        ds += self._draw_segment(ax, p4, p1)
+        # ds += self._draw_segment(ax, p1, p2)
+        # ds += self._draw_segment(ax, p2, p3)
+        # ds += self._draw_segment(ax, p3, p4)
+        # ds += self._draw_segment(ax, p4, p1)
 
         return self._draw(ax) + ds
 
@@ -164,7 +171,7 @@ class QuadTree:
 
         centerx = (minx + maxx) / 2
         centery = (miny + maxy) / 2
-        radius = max(maxx - centerx, maxy - centery) + 10**-12
+        radius = max(abs(maxx - centerx), abs(maxy - centery)) + 10**-12
 
         tree = QuadTree(centerx, centery, radius)
         for i, (x, y) in enumerate(points):
@@ -176,7 +183,7 @@ class QuadTree:
     def fixed_size(points, minx, maxx, miny, maxy):
         centerx = (minx + maxx) / 2
         centery = (miny + maxy) / 2
-        radius = max(maxx - centerx, maxy - centery)
+        radius = max(abs(maxx - centerx), abs(maxy - centery))
 
         tree = QuadTree(centerx, centery, radius)
         for i, (x, y) in enumerate(points):
