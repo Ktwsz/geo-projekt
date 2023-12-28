@@ -1,130 +1,42 @@
-from kdtree import KDTree
-from quadtree import QuadTree
-import numpy as np
-from time import process_time
+from test_plot import draw, draw_points
+from test_utils import test, points_generate_circle, points_generate_uniform
 
 
-TIME_DF_DIR = "./time.csv"
+def test_same_size(state, points_gen, bounds_gen, df_dir):
+    test_repeat = 100
+    query_repeat = 100
+
+    test(test_repeat, query_repeat, points_gen, bounds_gen, state, timer=True, time_df_name=df_dir)
 
 
-def generate_points(left_bound, right_bound, n):
-    return [
-        (x, y)
-        for x, y in np.random.uniform(low=left_bound, high=right_bound, size=(n, 2))
-    ]
+def test_asymptotic(state, points_gen, bounds_gen, df_dir):
+    test_repeat = 1
+    query_repeat = 100
 
-
-def get_rand_bounds(left, right):
-    x1, x2, y1, y2 = np.random.uniform(left, right, 4)
-
-    if x1 > x2:
-        x1, x2 = x2, x1
-
-    if y1 > y2:
-        y1, y2 = y2, y1
-
-    return ((x1, x2), (y1, y2))
-
-
-def brute(points, bounds):
-    ((x1, x2), (y1, y2)) = bounds
-
-    return {
-        ix
-        for ix, p in enumerate(points)
-        if p[0] <= x2 and p[0] >= x1 and p[1] <= y2 and p[1] >= y1
-    }
-
-
-def add_time(time_df, func, row, *func_args):
-    timer_start = process_time()
-    res = func(*func_args)
-    timer_stop = process_time()
-
-    row["time"] = timer_stop - timer_start
-    time_df.loc[len(time_df)] = row
-
-    return res
-
-
-def test(timer=False):
-    time_df = None if not timer else pd.DataFrame(columns=["time", "tree", "n"])
-    for _ in range(100):
-        left_bound, right_bound = -1000, 1000
-        n = 10000
-        repeat = 100
-
-        points = generate_points(left_bound, right_bound, n)
-
-        kdtree = (
-            KDTree(points)
-            if not timer
-            else add_time(time_df, KDTree, {"tree": "kd_tree", "n": n}, points)
-        )
-
-        qtree = (
-            QuadTree.from_points(points)
-            if not timer
-            else add_time(
-                time_df,
-                QuadTree.from_points,
-                {"tree": "qt_tree", "n": n},
-                points,
-            )
-        )
-
-        for _ in range(repeat):
-            bounds = get_rand_bounds(left_bound, right_bound)
-
-            solution = (
-                brute(points, bounds)
-                if not timer
-                else add_time(
-                    time_df,
-                    brute,
-                    {"tree": "brute", "func": "query", "n": n},
-                    points,
-                    bounds,
-                )
-            )
-
-            kd = (
-                kdtree.query(bounds)
-                if not timer
-                else add_time(
-                    time_df,
-                    kdtree.query,
-                    {"tree": "kd_tree", "func": "query", "n": n},
-                    bounds,
-                )
-            )
-
-            qt = (
-                qtree.query(bounds)
-                if not timer
-                else add_time(
-                    time_df,
-                    qtree.query,
-                    {"tree": "qt_tree", "func": "query", "n": n},
-                    bounds,
-                )
-            )
-
-            if kd == solution:
-                print("KD OK")
-            else:
-                print("KD ERR", kd, solution)
-                return
-            if qt == solution:
-                print("QT OK")
-            else:
-                print("QT ERR")
-                return
-
-    time_df.to_csv(TIME_DF_DIR, index=False)
+    for n in range(10000, 100001, 1000):
+        state["n"] = n
+        test(test_repeat, query_repeat, points_gen, bounds_gen, state, timer=True, time_df_name=df_dir)
 
 
 if __name__ == "__main__":
-    import pandas as pd
+    state = {"left_bound": -1000, "right_bound": 1000, "n": 10000, "center": (0, 0), "radius": 100}
+    draw_points(points_generate_uniform(state), "data/img/punkty_uniform.png", "Przykładowa dystrybucja punktów")
+    draw_points(points_generate_circle(state), "data/img/punkty_circle.png", "Przykładowa dystrybucja punktów")
+    print("--- rysowanie punktów done ---")
+    test_same_size(state, "uniform", "random", "data/csv/ss_u_r.csv")
 
-    test(timer=True)
+    print("--- testy uniform done ---")
+    test_same_size(state, "circle", "random", "data/csv/ss_c_r.csv")
+    print("--- testy circle done ---")
+
+    test_asymptotic(state, "uniform", "small", "data/csv/as_u_s.csv")
+    test_asymptotic(state, "uniform", "big", "data/csv/as_u_b.csv")
+    test_asymptotic(state, "circle", "small", "data/csv/as_c_s.csv")
+    test_asymptotic(state, "circle", "big", "data/csv/as_c_b.csv")
+    print("--- testy asymptotyczne done ---")
+
+    draw("data/csv/as_u_s.csv", 'data/img/as_u_s.png', "Porównanie czasowe dla punktów na płaszczyźnie i małych przedziałów")
+    draw("data/csv/as_u_b.csv", 'data/img/as_u_b.png', "Porównanie czasowe dla punktów na płaszczyźnie i dużych przedziałów")
+    draw("data/csv/as_c_s.csv", 'data/img/as_c_s.png', "Porównanie czasowe dla punktów na okręgu i małych przedziałów")
+    draw("data/csv/as_c_b.csv", 'data/img/as_c_b.png', "Porównanie czasowe dla punktów na okręgu i dużych przedziałów")
+    print("--- rysowanie wykresów done ---")
