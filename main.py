@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, RangeSlider, TextBox
 from kdtree import KDTree
 import numpy as np
-from quadtree import QTPoint, QuadTree
+from quadtree import QuadTree
 
 
 def generate_points(xrange, yrange, n):
@@ -45,7 +45,7 @@ def set_ax_limits():
 
 set_ax_limits()
 
-xsliderax = fig.add_axes([0.1, 0.15, 0.65, 0.03])
+xsliderax = fig.add_axes((0.1, 0.15, 0.65, 0.03))
 xslider = RangeSlider(
     ax=xsliderax,
     label="zakres x",
@@ -54,7 +54,7 @@ xslider = RangeSlider(
     valinit=(X_LOWER_LIMIT, X_UPPER_LIMIT),
 )
 
-ysliderax = fig.add_axes([0.1, 0.1, 0.65, 0.03])
+ysliderax = fig.add_axes((0.1, 0.1, 0.65, 0.03))
 yslider = RangeSlider(
     ax=ysliderax,
     label="zakres y",
@@ -63,7 +63,7 @@ yslider = RangeSlider(
     valinit=(Y_LOWER_LIMIT, Y_UPPER_LIMIT),
 )
 
-pointstxtbxax = fig.add_axes([0.1, 0.04, 0.1, 0.04])
+pointstxtbxax = fig.add_axes((0.1, 0.04, 0.1, 0.04))
 pointstxtbx = TextBox(ax=pointstxtbxax, label="liczba\npunktów")
 pointstxtbx.label.set_x(-0.1)
 pointstxtbx.label.set_y(0.5)
@@ -138,7 +138,7 @@ def on_clear(event):
     plt.draw()
 
 
-axclearbtn = fig.add_axes([0.75, 0.04, 0.1, 0.04])
+axclearbtn = fig.add_axes((0.75, 0.04, 0.1, 0.04))
 clearbtn = Button(axclearbtn, "Wyczyść")
 clearbtn.on_clicked(on_clear)
 
@@ -156,17 +156,14 @@ def on_generate(event):
     plt.draw()
 
 
-axgenbtn = fig.add_axes([0.22, 0.04, 0.1, 0.04])
+axgenbtn = fig.add_axes((0.22, 0.04, 0.1, 0.04))
 genbtn = Button(axgenbtn, "Wygeneruj")
 genbtn.on_clicked(on_generate)
 
 
 def draw_tree():
     global tree_drawn_segments
-    if not isinstance(tree, QuadTree) and not isinstance(tree, KDTree):
-        return
-
-    tree_drawn_segments = tree.draw(ax)
+    tree_drawn_segments = tree.draw(ax)  # type: ignore
     plt.draw()
 
 
@@ -185,7 +182,7 @@ def draw_bound(p1, p2):
     return ax.plot(xs, ys, color="green")[0]
 
 
-axqtbtn = fig.add_axes([0.4, 0.04, 0.1, 0.04])
+axqtbtn = fig.add_axes((0.4, 0.04, 0.1, 0.04))
 qtbtn = Button(axqtbtn, "Quadtree")
 qtbtn.on_clicked(on_qtree)
 
@@ -195,11 +192,16 @@ def on_kdtree(event):
     if not points:
         return
     clear_tree()
-    tree = KDTree(points, draw_bounds=((X_LOWER_LIMIT, X_UPPER_LIMIT), (Y_LOWER_LIMIT, Y_UPPER_LIMIT)))
-    plt.draw()
+    xs = list(map(lambda t: t[0], points))
+    ys = list(map(lambda t: t[1], points))
+    tree = KDTree(
+        points,
+        draw_bounds=((min(xs), max(xs)), (min(ys), max(ys))),
+    )
+    draw_tree()
 
 
-axkdtbtn = fig.add_axes([0.55, 0.04, 0.1, 0.04])
+axkdtbtn = fig.add_axes((0.55, 0.04, 0.1, 0.04))
 kdtbtn = Button(axkdtbtn, "KD-Tree")
 kdtbtn.on_clicked(on_kdtree)
 
@@ -280,14 +282,11 @@ def on_click(event):
     points.append((x, y))
     p = ax.plot([x], [y], marker="o", markersize=5, color="blue")[0]
     drawn_points.append(p)
-    if isinstance(tree, QuadTree):
-        tree.insert(QTPoint(x, y, len(points) - 1))
 
-    if isinstance(tree, KDTree):
+    if tree:
         tree.insert(x, y, len(points) - 1)
-
-    clear_tree()
-    draw_tree()
+        clear_tree()
+        draw_tree()
 
 
 def on_key_press(event):

@@ -50,7 +50,7 @@ class QuadTree:
 
         for point in self.points:
             for subtree in self._get_subtrees():
-                if subtree.insert(point):  # type: ignore
+                if subtree._insert(point):  # type: ignore
                     break
         self.points = []
 
@@ -67,7 +67,7 @@ class QuadTree:
     def _get_subtrees(self):
         return [self.topleft, self.topright, self.botleft, self.botright]
 
-    def insert(self, point: QTPoint):
+    def _insert(self, point: QTPoint):
         if not self._contains(point):
             return False
 
@@ -79,10 +79,13 @@ class QuadTree:
             self._divide()
 
         for subtree in self._get_subtrees():
-            if subtree.insert(point):  # type: ignore
+            if subtree._insert(point):  # type: ignore
                 return True
 
         return False
+
+    def insert(self, x, y, ix):
+        return self._insert(QTPoint(x, y, ix))
 
     def _overlaps(self, bounds):
         leftbound = bounds[0][0]
@@ -175,7 +178,7 @@ class QuadTree:
 
         tree = QuadTree(centerx, centery, radius)
         for i, (x, y) in enumerate(points):
-            tree.insert(QTPoint(x, y, i))
+            tree._insert(QTPoint(x, y, i))
 
         return tree
 
@@ -187,6 +190,6 @@ class QuadTree:
 
         tree = QuadTree(centerx, centery, radius)
         for i, (x, y) in enumerate(points):
-            tree.insert(QTPoint(x, y, i))
+            tree._insert(QTPoint(x, y, i))
 
         return tree
