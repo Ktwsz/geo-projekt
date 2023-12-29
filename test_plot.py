@@ -54,5 +54,29 @@ def draw_points(points, out_dir, title):
     fig.savefig(out_dir)
 
 
+def show_points_single_test(df_dir):
+    time_df = pd.read_csv(df_dir)
+
+    brute_samples = time_df[time_df["tree"] == "brute"]
+    kd_tree_samples = time_df[time_df["tree"] == "kd_tree"]
+    qt_tree_samples = time_df[time_df["tree"] == "qt_tree"]
+
+    kd_tree_setup = kd_tree_samples[kd_tree_samples["func"] == "setup"]["time"].sum()
+    kd_tree_query = kd_tree_samples[kd_tree_samples["func"] == "query"]["time"].sum()
+
+    qt_tree_setup = qt_tree_samples[qt_tree_samples["func"] == "setup"]["time"].sum()
+    qt_tree_query = qt_tree_samples[qt_tree_samples["func"] == "query"]["time"].sum()
+
+    brute_query = brute_samples[brute_samples["func"] == "query"]["time"].sum()
+
+    print("setup kd-tree: ", kd_tree_setup)
+    print("query kd-tree: ", kd_tree_query)
+
+    print("setup quadtree: ", qt_tree_setup)
+    print("query quadtree: ", qt_tree_query)
+
+    print("query brute: ", brute_query)
+
+
 if __name__ == "__main__":
     draw()
