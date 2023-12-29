@@ -1,5 +1,7 @@
 from math import log10
 from threading import Thread
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button, RangeSlider, TextBox, CheckButtons
 from kdtree import KDTree
@@ -30,10 +32,12 @@ DEFAULT_POINTS_NUMBER = 50
 
 VIS_SLEEP_TIME = 1
 
-fig, ax = plt.subplots()
+subplots: tuple[Figure, Axes] = plt.subplots()
+fig = subplots[0]
+ax = subplots[1]
 fig.set_dpi(100)
 fig.set_size_inches(8, 6)
-ax.set_position([0.1, 0.25, 0.7, 0.7])
+ax.set_position((0.1, 0.25, 0.7, 0.7))
 
 xrange = DEFAULT_X_RANGE
 yrange = DEFAULT_Y_RANGE
@@ -153,7 +157,11 @@ vischckbx.labels[0].set_x(0.2)
 
 def on_check(event):
     if not is_visualize_checked():
+        finish_animation()
         clear_animation()
+        if tree:
+            clear_tree()
+            draw_tree()
 
 
 vischckbx.on_clicked(on_check)
@@ -244,9 +252,11 @@ animation_objects = []
 
 
 def clear_animation():
-    global animation_objects
+    global animation_objects, sleep_time
     sth_removed = False
     for p in animation_objects:
+        if not sleep_time:
+            break
         try:
             p.remove()
             sth_removed = True
@@ -255,13 +265,15 @@ def clear_animation():
     return sth_removed
 
 
-def visualize_query(steps, keep_tree=False):
+def visualize_query(steps):
     global sleep_time, th, animation_objects
     if not isinstance(tree, QuadTree):
         return
     plt.draw()
     if clear_animation():
+        plt.draw()
         sleep(sleep_time)
+    plt.draw()
 
     for step in steps:
         if not sleep_time:
@@ -278,11 +290,10 @@ def visualize_query(steps, keep_tree=False):
 
 
 def visualize_build(steps):
-    global sleep_time, th
+    global sleep_time, th, animation_objects
     if not isinstance(tree, QuadTree):
         return
     clear_tree()
-    animation_objects = []
     for step in steps:
         if not sleep_time:
             return
@@ -293,10 +304,7 @@ def visualize_build(steps):
 
         plt.draw()
         sleep(sleep_time)
-    for p in animation_objects:
-        if not sleep_time:
-            return
-        p.remove()
+    clear_animation()
     if sleep_time:
         plt.draw()
     if sleep_time:
@@ -343,8 +351,9 @@ def on_kdtree(event):
     global tree, tree_drawn_segments, points
     if not points:
         return
-    clear_tree()
+    finish_animation()
     clear_animation()
+    clear_tree()
     xs = list(map(lambda t: t[0], points))
     ys = list(map(lambda t: t[1], points))
     tree = KDTree(
@@ -396,7 +405,7 @@ def highlight_points(found_points):
     for i, _ in enumerate(drawn_points):
         drawn_points[i].remove()
         x, y = points[i]
-        color = "red" if i in found_points else "blue"
+        color = "green" if i in found_points else "blue"
         zorder = 2 if i in found_points else 0
         drawn_points[i] = ax.plot(
             [x], [y], marker="o", markersize=5, color=color, zorder=zorder
@@ -428,8 +437,10 @@ def on_move(event):
         return
     mousex, mousey = event.xdata, event.ydata
     update_bounds(mousex, mousey)
-    update_points()
-
+    if is_visualize_checked():
+        highlight_points(set())
+    else:
+        update_points()
     plt.draw()
 
 
@@ -440,7 +451,7 @@ def on_click(event):
     if is_visualize_checked():
         if isinstance(tree, QuadTree) and th is None:
             p, steps = tree.visualized_query(bounds)
-            th = Thread(target=lambda: visualize_query(steps, True))
+            th = Thread(target=lambda: visualize_query(steps))
             th.start()
     else:
         x, y = event.xdata, event.ydata

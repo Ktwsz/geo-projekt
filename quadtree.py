@@ -137,11 +137,22 @@ class QuadTree:
         if self.divided:
             result = set()
             for subtree in self._get_subtrees():
-                r, s = subtree.visualized_query(bounds)
-                result |= r  # type: ignore
+                r, s = subtree.visualized_query(bounds)  # type: ignore
+                result |= r
                 steps += s
         else:
             steps += [[Rect(self.centerx, self.centery, self.radius, "green")]]
+            ps = []
+            for p in self.points:
+                ps.append(Point(p.x, p.y, "yellow"))
+            steps.append(ps)
+            ps = []
+            for p in self.points:
+                if p._in_bounds(bounds):
+                    ps.append(Point(p.x, p.y, "green"))
+                else:
+                    ps.append(Point(p.x, p.y, "blue"))
+            steps.append(ps)
             result = filter(lambda p: p._in_bounds(bounds), self.points)
             result = set(map(lambda p: p.data, result))
 
@@ -222,7 +233,9 @@ class QuadTree:
         p2 = [x + r, y + r]
         p3 = [x + r, y - r]
         p4 = [x - r, y - r]
-        steps = [[Segment(p1, p2), Segment(p2, p3), Segment(p3, p4), Segment(p4, p1)]]
+        steps: list = [
+            [Segment(p1, p2), Segment(p2, p3), Segment(p3, p4), Segment(p4, p1)]
+        ]
 
         tree = QuadTree(centerx, centery, radius)
         for i, (x, y) in enumerate(points):
