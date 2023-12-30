@@ -39,8 +39,6 @@ class QuadTree:
 
         self.divided = False
 
-        self.drawn_objects = []
-
     def _divide(self):
         newrad = self.radius / 2
         x = self.centerx
@@ -53,7 +51,7 @@ class QuadTree:
 
         for point in self.points:
             for subtree in self._get_subtrees():
-                if subtree._insert(point)[0]:  # type: ignore
+                if subtree._insert(point):  # type: ignore
                     break
         self.points = []
 
@@ -70,7 +68,24 @@ class QuadTree:
     def _get_subtrees(self):
         return [self.topleft, self.topright, self.botleft, self.botright]
 
-    def _insert(self, point: QTPoint, vis=False):
+    def _insert(self, point: QTPoint):
+        if not self._contains(point):
+            return False
+
+        if not self.divided and len(self.points) < self.capacity:
+            self.points.append(point)
+            return True
+
+        if not self.divided:
+            self._divide()
+
+        for subtree in self._get_subtrees():
+            if subtree._insert(point):  # type: ignore
+                return True
+
+        return False
+
+    def _visualized_insert(self, point: QTPoint):
         if not self._contains(point):
             return False, []
 
@@ -83,7 +98,7 @@ class QuadTree:
             steps.append(self._get_lines())
 
         for subtree in self._get_subtrees():
-            ok, s = subtree._insert(point, vis)  # type: ignore
+            ok, s = subtree._visualized_insert(point)  # type: ignore
             if ok:
                 steps += s
                 return True, steps
@@ -239,10 +254,13 @@ class QuadTree:
 
         tree = QuadTree(centerx, centery, radius)
         for i, (x, y) in enumerate(points):
-            steps.append([Point(x, y, "red")])
-            steps += tree._insert(QTPoint(x, y, i), vis)[1]
+            if vis:
+                steps.append([Point(x, y, "red")])
+                steps += tree._visualized_insert(QTPoint(x, y, i))[1]
+            else:
+                tree.insert(x, y, i)
         if not vis:
-            return tree, []
+            return tree
         return tree, steps
 
     @staticmethod

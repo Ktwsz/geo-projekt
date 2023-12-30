@@ -12,9 +12,10 @@ def points_generate_uniform(state):
     right_bound = state["right_bound"]
     n = state["n"]
 
-    return [(x, y)
-            for x, y in np.random.uniform(low=left_bound, high=right_bound, size=(n, 2))
-            ]
+    return [
+        (x, y)
+        for x, y in np.random.uniform(low=left_bound, high=right_bound, size=(n, 2))
+    ]
 
 
 def points_generate_circle(state):
@@ -23,11 +24,12 @@ def points_generate_circle(state):
     n = state["n"]
 
     rs = np.random.uniform(low=0, high=radius, size=n)
-    thetas = np.random.uniform(low=0, high=2*np.pi, size=n)
+    thetas = np.random.uniform(low=0, high=2 * np.pi, size=n)
 
-    return [(center[0] + r * np.cos(theta), center[1] + r * np.sin(theta))
-            for r, theta in zip(rs, thetas)
-            ]
+    return [
+        (center[0] + r * np.cos(theta), center[1] + r * np.sin(theta))
+        for r, theta in zip(rs, thetas)
+    ]
 
 
 def bounds_generate_random(state):
@@ -48,7 +50,10 @@ def bounds_generate_small(state):
     points = state["points"]
     ix = randrange(0, len(points))
 
-    return ((points[ix][0] - 10, points[ix][0] + 10), (points[ix][1] - 10, points[ix][1] + 10))
+    return (
+        (points[ix][0] - 10, points[ix][0] + 10),
+        (points[ix][1] - 10, points[ix][1] + 10),
+    )
 
 
 def bounds_generate_big(state):
@@ -80,15 +85,27 @@ def add_time(time_df, func, row, *func_args):
     return res
 
 
-POINTS_GEN_FUNCS = {"uniform": points_generate_uniform,
-                    "circle": points_generate_circle}
+POINTS_GEN_FUNCS = {
+    "uniform": points_generate_uniform,
+    "circle": points_generate_circle,
+}
 
-BOUNDS_GEN_FUNCS = {"random": bounds_generate_random,
-                    "small": bounds_generate_small,
-                    "big": bounds_generate_big}
+BOUNDS_GEN_FUNCS = {
+    "random": bounds_generate_random,
+    "small": bounds_generate_small,
+    "big": bounds_generate_big,
+}
 
 
-def test(test_repeat, query_repeat, points_gen_key, bounds_gen_key, state={}, timer=False, time_df_name=None):
+def test(
+    test_repeat,
+    query_repeat,
+    points_gen_key,
+    bounds_gen_key,
+    state={},
+    timer=False,
+    time_df_name=None,
+):
     if timer:
         if os.path.isfile(time_df_name):
             time_df = pd.read_csv(time_df_name)
@@ -109,7 +126,9 @@ def test(test_repeat, query_repeat, points_gen_key, bounds_gen_key, state={}, ti
         kdtree = (
             KDTree(points)
             if not timer
-            else add_time(time_df, KDTree, {"tree": "kd_tree", "func": "setup", "n": n}, points)
+            else add_time(
+                time_df, KDTree, {"tree": "kd_tree", "func": "setup", "n": n}, points
+            )
         )
 
         qtree = (

@@ -337,7 +337,7 @@ def on_qtree(event):
             th = Thread(target=lambda: visualize_build(steps))
             th.start()
     else:
-        tree, _ = QuadTree.from_points(points)
+        tree = QuadTree.from_points(points)
         draw_tree()
 
 
@@ -496,7 +496,10 @@ def on_key_press(event):
     bounds_rady = max(0, bounds_rady)
 
     update_bounds(mousex, mousey)
-    update_points()
+    if is_visualize_checked():
+        highlight_points(set())
+    else:
+        update_points()
 
 
 def on_close(event):

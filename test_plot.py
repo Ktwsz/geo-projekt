@@ -29,9 +29,9 @@ def draw(df_dir, out_dir, title):
         qt_plot[0].append(n)
         qt_plot[1].append(qt_y)
 
-    ax.plot(*brute_plot, 'r.', label="brute")
-    ax.plot(*kd_plot, 'b.', label="kd tree")
-    ax.plot(*qt_plot, 'g.', label="quad tree")
+    ax.plot(*brute_plot, "r.", label="brute")
+    ax.plot(*kd_plot, "b.", label="kd tree")
+    ax.plot(*qt_plot, "g.", label="quad tree")
 
     ax.legend()
     ax.set_xlabel("N")
@@ -43,11 +43,9 @@ def draw(df_dir, out_dir, title):
 def draw_points(points, out_dir, title):
     fig, ax = plt.subplots()
 
-    ax.plot([x for x, y in points], [y for x, y in points], '.')
+    ax.plot([x for x, y in points], [y for x, y in points], ".")
 
     ax.axis("equal")
-    ax.set_xlim(left=-1000, right=1000)
-    ax.set_ylim(bottom=-1000, top=1000)
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set_title(title)
