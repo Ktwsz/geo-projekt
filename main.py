@@ -267,8 +267,7 @@ def clear_animation():
 
 def visualize_query(steps):
     global sleep_time, th, animation_objects
-    if not isinstance(tree, QuadTree):
-        return
+
     plt.draw()
     if clear_animation():
         plt.draw()
@@ -291,8 +290,7 @@ def visualize_query(steps):
 
 def visualize_build(steps):
     global sleep_time, th, animation_objects
-    if not isinstance(tree, QuadTree):
-        return
+
     clear_tree()
     for step in steps:
         if not sleep_time:
@@ -313,7 +311,14 @@ def visualize_build(steps):
 
 
 def draw_tree():
-    global tree_drawn_segments
+    global tree_drawn_segments, points
+
+    if isinstance(tree, KDTree):
+        xs = list(map(lambda t: t[0], points))
+        ys = list(map(lambda t: t[1], points))
+        draw_bounds = ((min(xs), max(xs)), (min(ys), max(ys)))
+        tree.update_draw_bounds(draw_bounds)
+
     tree_drawn_segments = tree.draw(ax)  # type: ignore
     plt.draw()
 
@@ -348,19 +353,29 @@ qtbtn.on_clicked(on_qtree)
 
 
 def on_kdtree(event):
-    global tree, tree_drawn_segments, points
+    global tree, tree_drawn_segments, points, th, sleep_time
     if not points:
         return
     finish_animation()
     clear_animation()
     clear_tree()
+
     xs = list(map(lambda t: t[0], points))
     ys = list(map(lambda t: t[1], points))
-    tree = KDTree(
-        points,
-        draw_bounds=((min(xs), max(xs)), (min(ys), max(ys))),
-    )
-    draw_tree()
+    tree_draw_bounds = ((min(xs), max(xs)), (min(ys), max(ys)))
+
+    if is_visualize_checked():
+        if not th:
+            tree, steps = KDTree.visualized_init(points, tree_draw_bounds)
+            sleep_time = VIS_SLEEP_TIME
+            th = Thread(target=lambda: visualize_build(steps))
+            th.start()
+    else:
+        tree = KDTree(
+            points,
+            draw_bounds=tree_draw_bounds,
+        )
+        draw_tree()
 
 
 axkdtbtn = fig.add_axes((0.55, 0.06, 0.1, 0.04))
@@ -449,7 +464,7 @@ def on_click(event):
     if event.inaxes != ax:
         return
     if is_visualize_checked():
-        if isinstance(tree, QuadTree) and th is None:
+        if th is None:
             p, steps = tree.visualized_query(bounds)
             th = Thread(target=lambda: visualize_query(steps))
             th.start()

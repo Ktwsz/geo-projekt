@@ -1,4 +1,5 @@
 from copy import deepcopy
+from vis import Eraser, Point, Segment, Rect
 
 
 class Node:
@@ -10,7 +11,10 @@ class Node:
 
 
 class KDTree:
-    def __init__(self, points, draw_bounds=None):
+    def __init__(self, points=None, draw_bounds=None):
+        if points is None:
+            return
+
         self.tree = self.build_tree(list(enumerate(points)))
 
         self.draw_bounds = draw_bounds
@@ -89,22 +93,10 @@ class KDTree:
                 return []
 
             axis = depth % 2
-            other_axis = 1 - axis
 
-            segment = [[None, None], [None, None]]
-
-            segment[axis] = (node.p[axis], node.p[axis])
-
-            segment[other_axis] = current_bounds[other_axis]
-
+            segment, left_bounds, right_bounds = KDTree.get_bounds(node.p, axis, current_bounds)
 
             draw_segments = [ax.plot(*segment, color="black")[0]]
-
-            left_bounds = list(deepcopy(current_bounds))
-            left_bounds[axis] = (left_bounds[axis][0], node.p[axis])
-
-            right_bounds = list(deepcopy(current_bounds))
-            right_bounds[axis] = (node.p[axis], right_bounds[axis][1])
 
             return (draw_segments +
                     draw_helper(node.left, ax, tuple(left_bounds), depth + 1) +
@@ -113,3 +105,114 @@ class KDTree:
 
 
         return draw_helper(self.tree, ax, self.draw_bounds)
+
+
+    def visualized_query(self, bounds):
+        def query_helper(node, bounds, current_bounds, depth=0):
+            if node is None:
+                return set(), []
+
+            axis = depth % 2
+
+            segment, left_bounds, right_bounds = KDTree.get_bounds(node.p, axis, current_bounds)
+
+            rc_left = Rect(x1=left_bounds[0][0], y1=left_bounds[1][0], x2=left_bounds[0][1], y2=left_bounds[1][1], color="yellow")
+            rc_right = Rect(x1=right_bounds[0][0], y1=right_bounds[1][0], x2=right_bounds[0][1], y2=right_bounds[1][1], color="yellow")
+
+            search_left = node.p[axis] >= bounds[axis][0]
+            search_right = node.p[axis] <= bounds[axis][1]
+
+            rc_left_done = Rect(x1=left_bounds[0][0], y1=left_bounds[1][0], x2=left_bounds[0][1], y2=left_bounds[1][1], color="green" if search_left else "red")
+            rc_right_done = Rect(x1=right_bounds[0][0], y1=right_bounds[1][0], x2=right_bounds[0][1], y2=right_bounds[1][1], color="green" if search_right else "red")
+
+            is_p_in_bounds = (
+                node.p[0] >= bounds[0][0]
+                and node.p[0] <= bounds[0][1]
+                and node.p[1] >= bounds[1][0]
+                and node.p[1] <= bounds[1][1]
+            )
+
+            point_vis = Point(node.p[0], node.p[1], "green" if is_p_in_bounds else "blue")
+
+            ans = {node.ix} if is_p_in_bounds else set()
+            steps = [[point_vis], [rc_left], [Eraser(rc_left), rc_left_done], [rc_right], [Eraser(rc_right), rc_right_done]]
+
+
+            if search_left:
+                steps += [[Eraser(rc_left_done)]]
+                ans_left, steps_left = query_helper(node.left, bounds, tuple(left_bounds), depth + 1)
+                ans |= ans_left
+                steps += steps_left
+
+            if search_right:
+                steps += [[Eraser(rc_right_done)]]
+                ans_right, steps_right = query_helper(node.right, bounds, tuple(right_bounds), depth + 1)
+                ans |= ans_right
+                steps += steps_right
+
+            return ans, steps
+
+        return query_helper(self.tree, bounds, self.draw_bounds)
+
+
+    @staticmethod
+    def get_bounds(p, axis, draw_bounds):
+        other_axis = 1 - axis
+
+        segment = [[None, None], [None, None]]
+
+        segment[axis] = (p[axis], p[axis])
+
+        segment[other_axis] = draw_bounds[other_axis]
+
+        left_bounds = list(deepcopy(draw_bounds))
+        left_bounds[axis] = (left_bounds[axis][0], p[axis])
+
+        right_bounds = list(deepcopy(draw_bounds))
+        right_bounds[axis] = (p[axis], right_bounds[axis][1])
+
+        return segment, left_bounds, right_bounds
+
+
+    @staticmethod
+    def visualized_init(points, draw_bounds):
+        def init_helper(points, draw_bounds, depth=0):
+            n = len(points)
+
+            if n == 0:
+                return None, []
+
+            axis = depth % 2
+
+            sorted_points = sorted(points, key=lambda elem: elem[1][axis])
+
+            ix, p = sorted_points[n // 2]
+
+            node = Node(ix, p)
+
+            segment, right_bounds, left_bounds = KDTree.get_bounds(node.p, axis, draw_bounds)
+
+            p_vis = Point(p[0], p[1], "red")
+            steps = [[p_vis], [Point(p[0], p[1], "green"), Segment((segment[0][0],segment[1][0]), (segment[0][1], segment[1][1]))]]
+
+            left_node, left_steps = init_helper(sorted_points[: n // 2], tuple(left_bounds), depth + 1)
+            right_node, right_steps = init_helper(sorted_points[n // 2 + 1 :], tuple(right_bounds), depth + 1)
+
+            node.left = left_node
+            node.right = right_node
+
+            steps += left_steps
+            steps += right_steps
+
+            return node, steps
+
+        root, steps = init_helper(list(enumerate(points)), draw_bounds)
+
+        tree = KDTree()
+        tree.tree = root
+        tree.draw_bounds = draw_bounds
+
+        return tree, steps
+
+    def update_draw_bounds(self, draw_bounds):
+        self.draw_bounds = draw_bounds

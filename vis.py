@@ -26,14 +26,21 @@ class Segment:
 
 
 class Rect:
-    def __init__(self, x, y, r, color) -> None:
-        self.p = (x - r, y - r)
-        self.s = 2 * r
+    def __init__(self, x=None, y=None, r=None, color=None, x1=None, y1=None, x2=None, y2=None) -> None:
+        if x1 is None:
+            self.p = (x - r, y - r)
+            self.s1 = 2 * r
+            self.s2 = 2 * r
+        else:
+            self.p = (x1, y1)
+            self.s1 = x2 - x1
+            self.s2 = y2 - y1
+
         self.color = color
 
     def draw(self, ax):
         self.obj = ax.add_patch(
-            Rectangle(self.p, self.s, self.s, color=self.color, alpha=0.5)
+            Rectangle(self.p, self.s1, self.s2, color=self.color, alpha=0.5)
         )
         return self.obj
 
