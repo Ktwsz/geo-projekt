@@ -190,7 +190,7 @@ class KDTree:
 
             node = Node(ix, p)
 
-            segment, right_bounds, left_bounds = KDTree.get_bounds(node.p, axis, draw_bounds)
+            segment, left_bounds, right_bounds = KDTree.get_bounds(node.p, axis, draw_bounds)
 
             p_vis = Point(p[0], p[1], "red")
             steps = [[p_vis], [Point(p[0], p[1], "green"), Segment((segment[0][0],segment[1][0]), (segment[0][1], segment[1][1]))]]
