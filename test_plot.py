@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def draw(df_dir, out_dir, title):
+def draw(df_dir, out_dir, title=None):
     fig, ax = plt.subplots()
 
     time_df = pd.read_csv(df_dir)
@@ -36,11 +36,12 @@ def draw(df_dir, out_dir, title):
     ax.legend()
     ax.set_xlabel("N")
     ax.set_ylabel("t [s]")
-    ax.set_title(title)
+    if title:
+        ax.set_title(title)
     fig.savefig(out_dir)
 
 
-def draw_points(points, out_dir, title):
+def draw_points(points, out_dir, title=None):
     fig, ax = plt.subplots()
 
     ax.plot([x for x, y in points], [y for x, y in points], ".")
@@ -48,7 +49,8 @@ def draw_points(points, out_dir, title):
     ax.axis("equal")
     ax.set_xlabel("x")
     ax.set_ylabel("y")
-    ax.set_title(title)
+    if title:
+        ax.set_title(title)
     fig.savefig(out_dir)
 
 

@@ -1,3 +1,4 @@
+from math import log
 from kdtree import KDTree
 from quadtree import QuadTree
 import numpy as np
@@ -60,7 +61,7 @@ def bounds_generate_big(state):
     left, right = state["left_bound"], state["right_bound"]
     bound_size = (right - left) / 4
 
-    x, y = np.random.uniform(low=0, high=left, size=2)
+    x, y = np.random.uniform(low=left, high=right, size=2)
     return ((x, x + bound_size), (y, y + bound_size))
 
 
@@ -85,9 +86,54 @@ def add_time(time_df, func, row, *func_args):
     return res
 
 
+def generate_grid(state):
+    x, y = state["center"]
+    r = state["radius"]
+
+    n = 1844
+
+    def _gen_seg(p1, p2, n):
+        a, b = p1
+        c, d = p2
+        stepx = (c - a) / n
+        stepy = (d - b) / n
+        return [(a + stepx * i, b + stepy * i) for i in range(n + 1)]
+
+    def _gen(x, y, r, n):
+        n //= 2
+        if not n:
+            return []
+        return _gen_seg((x - r, y), (x + r, y), n) + _gen_seg((x, y + r), (x, y - r), n)
+
+    def _gen_sq(x, y, r, n, depth):
+        if n <= 0:
+            return []
+        sr = r / 2
+        return (
+            _gen(x, y, r, n)
+            + _gen_sq(x - sr, y + sr, sr, n // 4, depth + 1)
+            + _gen_sq(x + sr, y + sr, sr, n // 4, depth + 1)
+            + _gen_sq(x - sr, y - sr, sr, n // 4, depth + 1)
+            + _gen_sq(x + sr, y - sr, sr, n // 4, depth + 1)
+        )
+
+    return _gen_sq(x, y, r, n, 0)
+
+
+def generate_one_far(state):
+    a = 1000
+    r = 100
+    n = state["n"]
+    return points_generate_uniform(
+        {"left_bound": -a, "right_bound": -a + r, "n": n}
+    ) + [(a, a)]
+
+
 POINTS_GEN_FUNCS = {
     "uniform": points_generate_uniform,
     "circle": points_generate_circle,
+    "grid": generate_grid,
+    "one_far": generate_one_far,
 }
 
 BOUNDS_GEN_FUNCS = {
