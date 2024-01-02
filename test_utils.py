@@ -226,7 +226,7 @@ def test(
             )
 
             if kd != solution:
-                print("KD ERR", kd, solution)
+                print("KD ERR", len(kd), len(solution))
                 return
             if qt != solution:
                 print("QT ERR")

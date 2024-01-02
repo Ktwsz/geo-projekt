@@ -20,23 +20,37 @@ class KDTree:
         self.draw_bounds = draw_bounds
 
     def build_tree(self, points, depth=0):
-        n = len(points)
+        sorted_points = [sorted(points, key=lambda elem: elem[1][axis]) for axis in range(2)]
 
-        if n == 0:
-            return None
+        def build_tree_helper(points, depth=0):
+            n = len(points[0])
+            if n == 0:
+                return None
 
-        axis = depth % 2
+            axis = depth % 2
 
-        sorted_points = sorted(points, key=lambda elem: elem[1][axis])
+            ix, p = points[axis][n // 2]
 
-        ix, p = sorted_points[n // 2]
+            left_points = [[(ix1, p1)
+                            for ix1, p1
+                            in points_axis
+                            if p1[axis] - p[axis] < 0 and ix1 != ix]
+                           for points_axis in points]
 
-        return Node(
-            ix,
-            p,
-            self.build_tree(sorted_points[: n // 2], depth + 1),
-            self.build_tree(sorted_points[n // 2 + 1 :], depth + 1),
-        )
+            right_points = [[(ix1, p1)
+                             for ix1, p1
+                             in points_axis
+                             if p1[axis] - p[axis] >= 0 and ix1 != ix]
+                            for points_axis in points]
+
+            return Node(
+                ix,
+                p,
+                build_tree_helper(left_points, depth + 1),
+                build_tree_helper(right_points, depth + 1),
+            )
+
+        return build_tree_helper(sorted_points)
 
     def query(self, bounds):
         def query_helper(node, bounds, depth=0):
