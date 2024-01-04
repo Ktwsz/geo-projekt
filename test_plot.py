@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+from numpy import isnan
 
 
-def draw(df_dir, out_dir, title=None):
+def draw(df_dir, out_dir, func_name, title=None):
     fig, ax = plt.subplots()
 
     time_df = pd.read_csv(df_dir)
@@ -12,7 +13,7 @@ def draw(df_dir, out_dir, title=None):
     qt_plot = [[], []]
 
     for n in time_df["n"].unique():
-        query_samples = time_df[(time_df["n"] == n) & (time_df["func"] == "query")]
+        query_samples = time_df[(time_df["n"] == n) & (time_df["func"] == func_name)]
 
         brute_samples = query_samples[query_samples["tree"] == "brute"]
         kd_tree_samples = query_samples[query_samples["tree"] == "kd_tree"]
@@ -22,14 +23,18 @@ def draw(df_dir, out_dir, title=None):
         kd_y = kd_tree_samples["time"].mean()
         qt_y = qt_tree_samples["time"].mean()
 
-        brute_plot[0].append(n)
-        brute_plot[1].append(brute_y)
+        if not isnan(brute_y):
+            brute_plot[0].append(n)
+            brute_plot[1].append(brute_y)
+
         kd_plot[0].append(n)
         kd_plot[1].append(kd_y)
         qt_plot[0].append(n)
         qt_plot[1].append(qt_y)
 
-    ax.plot(*brute_plot, "r.", label="brute")
+    if brute_plot[0]:
+        ax.plot(*brute_plot, "r.", label="brute")
+
     ax.plot(*kd_plot, "b.", label="kd tree")
     ax.plot(*qt_plot, "g.", label="quad tree")
 
@@ -39,6 +44,7 @@ def draw(df_dir, out_dir, title=None):
     if title:
         ax.set_title(title)
     fig.savefig(out_dir)
+    plt.close()
 
 
 def draw_points(points, out_dir, title=None):
