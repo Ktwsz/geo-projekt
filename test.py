@@ -98,65 +98,17 @@ if __name__ == "__main__":
     print("--- testy asymptotyczne done ---")
 
     for func_name in ["query", "setup"]:
-        draw(
-            "data/csv/as_u_r.csv",
-            f"data/img/as_u_r_{func_name}.png",
-            func_name
-        )
-        draw(
-            "data/csv/as_c_r.csv",
-            f"data/img/as_c_r_{func_name}.png",
-            func_name
-        )
-        draw(
-            "data/csv/as_u_s.csv",
-            f"data/img/as_u_s_{func_name}.png",
-            func_name
-        )
-        draw(
-            "data/csv/as_u_b.csv",
-            f"data/img/as_u_b_{func_name}.png",
-            func_name
-        )
-        draw(
-            "data/csv/as_c_s.csv",
-            f"data/img/as_c_s_{func_name}.png",
-            func_name
-        )
-        draw(
-            "data/csv/as_c_b.csv",
-            f"data/img/as_c_b_{func_name}.png",
-            func_name
-        )
+        draw("data/csv/as_u_r.csv", f"data/img/as_u_r_{func_name}.png", func_name)
+        draw("data/csv/as_c_r.csv", f"data/img/as_c_r_{func_name}.png", func_name)
+        draw("data/csv/as_u_s.csv", f"data/img/as_u_s_{func_name}.png", func_name)
+        draw("data/csv/as_u_b.csv", f"data/img/as_u_b_{func_name}.png", func_name)
+        draw("data/csv/as_c_s.csv", f"data/img/as_c_s_{func_name}.png", func_name)
+        draw("data/csv/as_c_b.csv", f"data/img/as_c_b_{func_name}.png", func_name)
 
-        draw(
-            "data/csv/as_g_r.csv",
-            f"data/img/as_g_r_{func_name}.png",
-            func_name
-        )
-        draw(
-            "data/csv/as_o_r.csv",
-            f"data/img/as_o_r_{func_name}.png",
-            func_name
-        )
-        draw(
-            "data/csv/as_g_s.csv",
-            f"data/img/as_g_s_{func_name}.png",
-            func_name
-        )
-        draw(
-            "data/csv/as_g_b.csv",
-            f"data/img/as_g_b_{func_name}.png",
-            func_name
-        )
-        draw(
-            "data/csv/as_o_s.csv",
-            f"data/img/as_o_s_{func_name}.png",
-            func_name
-        )
-        draw(
-            "data/csv/as_o_b.csv",
-            f"data/img/as_o_b_{func_name}.png",
-            func_name
-        )
+        draw("data/csv/as_g_r.csv", f"data/img/as_g_r_{func_name}.png", func_name)
+        draw("data/csv/as_o_r.csv", f"data/img/as_o_r_{func_name}.png", func_name)
+        draw("data/csv/as_g_s.csv", f"data/img/as_g_s_{func_name}.png", func_name)
+        draw("data/csv/as_g_b.csv", f"data/img/as_g_b_{func_name}.png", func_name)
+        draw("data/csv/as_o_s.csv", f"data/img/as_o_s_{func_name}.png", func_name)
+        draw("data/csv/as_o_b.csv", f"data/img/as_o_b_{func_name}.png", func_name)
     print("--- rysowanie wykresów done ---")

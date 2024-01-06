@@ -19,6 +19,12 @@ class QTPoint:
 
 
 from vis import Eraser, Point, Segment, Rect
+import sys
+
+if len(sys.argv) == 3 and sys.argv[1] == "--qtcapacity":
+    capacity = int(sys.argv[2])
+else:
+    capacity = 4
 
 
 class QuadTree:
@@ -27,7 +33,7 @@ class QuadTree:
         self.centery = centery
         self.radius = radius
 
-        self.capacity = 4
+        self.capacity = capacity
         self.points: list[QTPoint] = []
 
         self.topleft = None
