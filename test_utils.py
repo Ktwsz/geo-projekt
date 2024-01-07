@@ -86,11 +86,42 @@ def add_time(time_df, func, row, *func_args):
     return res
 
 
+def generate_eq(state):
+    left, right = state["left_bound"], state["right_bound"]
+    n = state["n"]
+
+    from math import isqrt
+
+    s = isqrt(n)
+
+    step = (right - left) / n
+
+    points = []
+
+    for row in range(s):
+        for col in range(s):
+            points.append((left + col * step, left + row * step))
+
+    return points
+
+
+from bisect import bisect_left
+from math import log
+
+
+def bis(num):
+    n = bisect_left(
+        list(range(0, num)), num, lo=0, hi=num, key=lambda x: x * log(x) / log(4)
+    )
+    return n
+
+
 def generate_grid(state):
     x, y = state["center"]
     r = state["radius"]
+    k = state["n"]
 
-    n = 1844
+    n = bis(k)
 
     def _gen_seg(p1, p2, n):
         a, b = p1

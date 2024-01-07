@@ -1,5 +1,6 @@
 from test_plot import draw, draw_points, show_points_single_test
 from test_utils import (
+    generate_eq,
     generate_grid,
     generate_one_far,
     test,
